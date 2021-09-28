@@ -1,33 +1,7 @@
-/// TODO:
-/// - Use command line arguments to generate a random string with specified parameters
-///     + req: name (key)
-///     + opt: Length
-/// - Save (key, value) pair for each password to a hidden file
-/// - Allow for passwords to be updated/regenerated
-/// - Command to obtain password via command argument
-/// 
-/// To keep things simple, we'll start off by not considering special characters
-/// and numbers. Eventually we can completely overhaul the password generation algorithm
-/// with a much safer and secure version.
-/// 
-/// Commands:
-/// g (generate) [name] [OPTIONAL: length]
-/// o (obtain) [name]
-/// a (add) [name] [password]
-/// d (delete) [name]
-/// h (help)
-/// 
-/// Examples:
-/// ```sh
-/// $ cargo run g gatech 10
-/// $ cargo run o gatech
-/// HfhevIUwhd
-/// ```
-
 use std::env;
 use rand::Rng;
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::error::Error;
 use std::io::ErrorKind;
 
@@ -70,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args[1].as_str() {
         "g" => {
             if args.len() < 3 {
-                panic!("Please specify a password name");
+                panic!("Please specify a password name.");
             }
     
             let name = &args[2];
@@ -100,39 +74,56 @@ fn main() -> Result<(), Box<dyn Error>> {
     
             // pass_buf -> insert borrowed. no longer needs to be used.
             pass_map.insert(name.to_string(), pass_buf);
-
-            let c_file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .append(false)
-                .truncate(true)
-                .open(".map.json")?;
-            serde_json::to_writer(&c_file, &pass_map)?;
         }
         "o" => {
             if args.len() < 3 {
-                panic!("Please specify a password name");
+                panic!("Please specify a password name.");
             }
 
             let name = &args[2];
 
             if pass_map.len() == 0 {
                 pass_map.insert(name.to_string(), "Password not found".to_string());
-
-                let c_file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .append(false)
-                    .truncate(true)
-                    .open(".map.json")?;
-                serde_json::to_writer(&c_file, &pass_map)?;
             }
 
             println!("Password for {}: {}", name, pass_map.get(name)
                 .unwrap_or(&"Password not found".to_string()));
         }
-        _ => {}
+        "a" => {
+            if args.len() < 4 {
+                panic!("Please specify a password name and matching password.");
+            }
+
+            let name = &args[2];
+            let password = &args[3];
+
+            pass_map.insert(name.to_string(), password.to_string());
+        }
+        "d" => {
+            if args.len() < 3 {
+                panic!("Please specify a password name.");
+            }
+
+            let name = &args[2];
+
+            if pass_map.len() <= 1 {
+                pass_map.insert(name.to_string(), "Password not found".to_string());
+            }
+
+            pass_map.remove(name);
+        }
+        _ => {
+            panic!("Not a recognized command!");
+        }
     };
+
+    let c_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .append(false)
+        .truncate(true)
+        .open(".map.json")?;
+    serde_json::to_writer(&c_file, &pass_map)?;
 
     Ok(())
 }
