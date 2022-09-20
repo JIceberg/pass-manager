@@ -10,6 +10,12 @@ use serde_json;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut just_created = true;
 
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        panic!("Please specify a command.");
+    }
+
     let file = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -34,12 +40,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         true => HashMap::new(),
         false => serde_json::from_reader(&file)?
     };
-
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        panic!("Please specify a command.");
-    }
 
     match args[1].as_str() {
         "g" => {
